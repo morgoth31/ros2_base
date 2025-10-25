@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   robot_simulator:
     build:
@@ -12,7 +10,7 @@ services:
       - ROS_DOMAIN_ID=42
 
   station_control:
-    image: ros:humble-desktop
+    image: ros:humble-desktop-jammy
     container_name: station_control
     depends_on:
       - robot_simulator
