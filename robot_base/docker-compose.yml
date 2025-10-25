@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Nœud 1: Notre publisher de marqueur
+  marker_publisher:
+    build: .
+    container_name: robot_marker_publisher
+    environment:
+      - ROS_DOMAIN_ID=42 # Identifiant unique pour ce réseau DDS
+    networks:
+      - ros_net
+    command: ros2 run hello_rviz marker_publisher
+    depends_on:
+      - tf_publisher # S'assurer que le TF est lancé en premier
+
+  # Nœud 2: Le publisher de transformation statique
+  tf_publisher:
+    image: robot_marker_publisher_img # Réutilise l'image construite
+    build: . # S'assure que l'image est construite et taggée
+    image_name: robot_marker_publisher_img # Nom de l'image construite
+    container_name: robot_tf_publisher
+    environment:
+      - ROS_DOMAIN_ID=99
+    networks:
+      - ros_net
+    # Lance 'static_transform_publisher' [x y z yaw pitch roll frame_id child_frame_id]
+    # Crée un 'base_link' enfant de 'map'
+    command: ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 map base_link
+
+networks:
+  ros_net:
+    external: true # Utilise le réseau créé manuellement

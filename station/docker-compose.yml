@@ -1,0 +1,37 @@
+services:
+  ros-desktop:
+    image: osrf/ros:humble-desktop
+    container_name: ros_humble_desktop
+    
+    # Utiliser l'UID/GID de l'hôte pour éviter les problèmes de permissions sur les volumes
+    user: "${UID}:${GID}" 
+    
+    # Garder le conteneur actif
+    command: tail -f /dev/null
+    
+    # Configuration Réseau (CRUCIALE)
+    # Partage l'interface réseau de l'hôte pour une découverte DDS facile
+    network_mode: "host"
+    ipc: "host"
+    
+    environment:
+      # 1. ID de domaine pour correspondre au Jetson (ROS_DOMAIN_ID=99)
+      - ROS_DOMAIN_ID=99
+      
+      # 2. Configuration pour l'affichage graphique (X11)
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      
+    volumes:
+      # 1. Partage du socket X11 pour l'affichage
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      
+      # 2. (Optionnel) Partagez le pilote graphique pour l'accélération matérielle
+      - /dev/dri:/dev/dri
+      
+      # 3. (Optionnel) Montez un workspace local pour la simulation
+      # Nous l'utiliserons pour Gazebo à l'étape 4
+      - ./ros2_ws:/home/ros/ros2_ws 
+
+    # Requis pour l'accès aux périphériques (GPU/Gazebo)
+    privileged: true
