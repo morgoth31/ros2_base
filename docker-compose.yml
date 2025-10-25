@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  robot_simulator:
+    build:
+      context: .
+      dockerfile: robot_simulator/Dockerfile
+    container_name: robot_simulator
+    networks:
+      - ros_net
+    environment:
+      - ROS_DOMAIN_ID=42
+
+  station_control:
+    image: ros:humble-desktop
+    container_name: station_control
+    depends_on:
+      - robot_simulator
+    networks:
+      - ros_net
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - ROS_DOMAIN_ID=42
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./station_control/config.rviz:/root/.rviz2/default.rviz
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash && rviz2 -d /root/.rviz2/default.rviz"
+
+networks:
+  ros_net:
+    driver: bridge
