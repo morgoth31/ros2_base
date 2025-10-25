@@ -1,37 +1,50 @@
+version: '3.8'
+
 services:
-  ros-desktop:
-    image: osrf/ros:humble-desktop
+  ros_humble_desktop:
+    image: osrf/ros:humble-desktop-full
     container_name: ros_humble_desktop
-    
-    # Utiliser l'UID/GID de l'hôte pour éviter les problèmes de permissions sur les volumes
-    user: "${UID}:${GID}" 
-    
-    # Garder le conteneur actif
-    command: tail -f /dev/null
-    
-    # Configuration Réseau (CRUCIALE)
-    # Partage l'interface réseau de l'hôte pour une découverte DDS facile
+    privileged: true 
+
+    # --- Configuration Utilisateur (UID/GID) ---
+    # Utilise l'UID et le GID de l'hôte (définis dans le fichier .env)
+    # pour que les fichiers créés dans les volumes aient les bonnes permissions.
+    user: "${UID}:${GID}"
+
     network_mode: "host"
-    ipc: "host"
-    
+
     environment:
-      # 1. ID de domaine pour correspondre au Jetson (ROS_DOMAIN_ID=99)
-      - ROS_DOMAIN_ID=99
-      
-      # 2. Configuration pour l'affichage graphique (X11)
+      # --- Configuration X11 (pour RViz2) ---
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
-      
-    volumes:
-      # 1. Partage du socket X11 pour l'affichage
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      
-      # 2. (Optionnel) Partagez le pilote graphique pour l'accélération matérielle
-      - /dev/dri:/dev/dri
-      
-      # 3. (Optionnel) Montez un workspace local pour la simulation
-      # Nous l'utiliserons pour Gazebo à l'étape 4
-      - ./ros2_ws:/home/ros/ros2_ws 
 
-    # Requis pour l'accès aux périphériques (GPU/Gazebo)
-    privileged: true
+      # --- Définition du HOME pour l'utilisateur UID/GID ---
+      # Nous définissons un répertoire HOME pour que .Xauthority soit trouvé
+      - HOME=/home/ros
+
+      # --- Configuration ROS 2 (Exemples) ---
+      - ROS_DOMAIN_ID=30
+      # - ROS_DISCOVERY_SERVER=192.168.1.100:11811
+
+    volumes:
+      # --- Montage X11 (pour RViz2) ---
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Monte le fichier d'autorisation X11 dans le nouveau HOME
+      - ~/.Xauthority:/home/ros/.Xauthority:ro
+
+      # --- Montage du projet ---
+      # Monte le projet dans le nouveau HOME
+      - ..:/home/ros/ros2_ws:rw
+      
+      # --- [Optionnel] Persistance du cache colcon/rosdep ---
+      # Permet de garder le cache entre les recréations de conteneur
+      # - ros_cache:/home/ros/.cache
+
+    # Définit le répertoire de travail par défaut
+    working_dir: /home/ros/ros2_ws
+
+    command: tail -f /dev/null
+
+# --- [Optionnel] Volume nommé pour le cache ---
+# volumes:
+#   ros_cache:
