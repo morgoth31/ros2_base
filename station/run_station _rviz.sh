@@ -11,7 +11,7 @@ docker container kill ros_humble_desktop
 
 docker compose up -d
 
-docker exec -it ros_humble_desktop bash
+docker exec -it ros_humble_desktop bash -c "source /opt/ros/humble/setup.bash && rviz2"
 
 #source /opt/ros/humble/setup.bash
 

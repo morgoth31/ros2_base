@@ -23,7 +23,7 @@ services:
       - HOME=/home/ros
 
       # --- Configuration ROS 2 (Exemples) ---
-      - ROS_DOMAIN_ID=30
+      - ROS_DOMAIN_ID=99
       # - ROS_DISCOVERY_SERVER=192.168.1.100:11811
 
     volumes:

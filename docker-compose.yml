@@ -1,33 +1,53 @@
 version: '3.8'
 
 services:
-  robot_simulator:
-    build:
-      context: .
-      dockerfile: robot_simulator/Dockerfile
-    container_name: robot_simulator
-    networks:
-      - ros_net
-    environment:
-      - ROS_DOMAIN_ID=42
+  # --- Service 1: Le nœud Publicateur ---
+  publisher:
+    container_name: ros_publisher_99
+    # Utilise directement l'image de base légère
+    image: osrf/ros:humble-ros-base
+    
+    network_mode: "host"
 
-  station_control:
-    image: ros:humble-desktop
-    container_name: station_control
-    depends_on:
-      - robot_simulator
-    networks:
-      - ros_net
     environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-      - ROS_DOMAIN_ID=42
+      # L'ID de domaine ROS 2, comme demandé
+      - ROS_DOMAIN_ID=99
+    
+    # Monte le répertoire 'app' de l'hôte
+    # dans le répertoire '/app' du conteneur.
+    # 'ro' (read-only) est une bonne pratique car le conteneur n'a pas besoin d'écrire sur les scripts.
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./station_control/config.rviz:/root/.rviz2/default.rviz
-    command: >
-      bash -c "source /opt/ros/humble/setup.bash && rviz2 -d /root/.rviz2/default.rviz"
+      - ./app:/app:ro
 
-networks:
-  ros_net:
-    driver: bridge
+    # Définit le répertoire de travail à l'intérieur du conteneur
+    working_dir: /app
+    
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash && 
+               python3 ./publisher_node.py"
+
+  # --- Service 2: Le nœud Calculateur ---
+  calculator:
+    container_name: ros_calculator_99
+    # Utilise la même image de base
+    image: osrf/ros:humble-ros-base
+
+    network_mode: "host"
+
+    environment:
+      # Doit être sur le MÊME ID de domaine pour communiquer
+      - ROS_DOMAIN_ID=99
+    
+    # Monte également le répertoire des scripts
+    volumes:
+      - ./app:/app:ro
+
+    # Définit le répertoire de travail
+    working_dir: /app
+      
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash && 
+               python3 ./calculator_node.py"
+    
+    depends_on:
+      - publisher

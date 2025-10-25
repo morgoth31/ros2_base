@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  ydlidar_node:
+    # Construire l'image à partir du Dockerfile dans le même répertoire
+    build: .
+    # Nommer l'image construite (optionnel mais recommandé)
+    image: ros-humble-ydlidar:latest
+    container_name: ydlidar_driver_container
+    
+    # Définir l'variable d'environnement ROS_DOMAIN_ID
+    environment:
+      - ROS_DOMAIN_ID=99
+      
+    # Mapper le périphérique Lidar de l'hôte vers le conteneur
+    # ASSUREZ-VOUS que /dev/ttyUSB0 correspond au port de votre Lidar
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      
+    # Utiliser le réseau de l'hôte
+    # C'est la méthode la plus simple pour que la découverte DDS (ROS 2)
+    # fonctionne entre le conteneur et l'hôte (ou d'autres conteneurs en host mode)
+    # sur le même ROS_DOMAIN_ID.
+    network_mode: host
+    
+    # Commande à exécuter au démarrage
+    # Elle surcharge le CMD du Dockerfile.
+    # Nous spécifions explicitement le port (même si c'est le défaut)
+    # pour la clarté et pour correspondre au mapping 'devices'.
+    command: ros2 launch ydlidar_ros_driver ydlidar_launch.py port:=/dev/ttyUSB0
+    
+    # Maintenir le conteneur en cours d'exécution
+    stdin_open: true
+    tty: true
